@@ -1,0 +1,232 @@
+#!/bin/ksh
+#--------- Initial settings and tests --------------------------------
+PATH=$PATH:/usr/local/bin:/usr/openwin/bin;export PATH
+# 
+# this is required, so USER will be seen as a global variable.
+# otherwise, changes made to USER in subroutines 
+# may not be reflected back in main
+#
+#USER=`echo $USER`
+USER=a231677
+export USER
+
+GOTO=""
+export GOTO
+
+COMMENT="Where do you want to be already?"
+
+#
+# put your machine's hostname here 
+# This is a flag that the script needs to be modified along with your username. 
+# The theory is that if you have modified the following line, you have
+# updated your username as well.
+#
+MYMACHINE=traveller 	
+
+ME=`hostname`;export ME
+
+#
+# for multi-area logins; 
+# If you have a different login-name in different areas you may indicate it here.  
+# You will need to modify the subroutine "isprod" for correct
+# operation.
+#
+
+USER1=a231677;export USER1
+USER2=a231677;export USER2
+
+if [ \( "$USER" = "root" \) -o \( "$USER" = "" \) ]; then
+  #
+  # the default user; user used if isprod doesn't change it.
+  #
+  USER=$USER1;export USER
+fi
+
+if [ "$ME" != "$MYMACHINE" ]; then
+  echo "error in $0"
+  echo "Please define USER  and MYMACHINE in the script."
+  echo "Currently they are as follows:"
+  echo "USER $USER"
+  echo "MYMACHINE $MYMACHINE"
+  echo "USER1 $USER1"
+  echo "USER2 $USER2"
+  echo
+  echo "also, please examine subroutine \"isprod\" to determine if it is correct."
+  echo
+  exit
+fi
+#
+# some fonts can be found in "/usr/openwin/lib/X11/fonts/misc/"
+# do:  find / |grep fonts >/tmp/fonts.txt
+# then: vi /tmp/fonts.txt 
+# to determine what font you want. Not all fonts will be available.
+#
+#FONT="courR14"
+FONT="fixed"
+export FONT
+
+# default foreground and background colors 
+
+TEXTCOLOR=white
+BACKGROUND=black
+
+COMMENT="";export COMMENT
+#--------- Initial settings and tests --------------------------------
+#--------- Study individual parameters -------------------------------
+study()
+{
+  if [ "$1" = "" ]; then
+    return 0
+  fi
+  # looking for "@"
+  CT1=`echo "$1" | grep "@" |wc -l`
+  if [ $CT1 -eq 1 ]; then
+    USER=`echo $1|cut -f1 -d"@"`
+    export USER
+    # echo "found @; user is $USER"
+    GOTO=`echo $1|cut -f2 -d"@"`
+    # echo Going to $GOTO
+    return "1"
+  fi
+
+  # looking for "-l"
+  CT2=`echo "$1" | grep "\-l" |wc -l`
+  if [ $CT2 -eq 1 ]; then
+    USER=$2
+    export USER
+    # echo "found -l; user is $USER"
+    GOTO="$3"
+    # echo "Going to $GOTO"
+    return "1"
+  fi
+
+#
+# this means that say, bob is at bill's machine
+#
+
+}
+#--------- Study individual parameters -------------------------------
+#--------- examine - Break down parameter list -----------------------
+examine()
+{
+  CTR=0
+  while [ ! "$1" = "" ]; do
+    study $1 $2 $3
+    FOUND=$?
+    if [ "$FOUND" = "1" ]; then
+      # echo "Found one, stop examination..."
+      # echo USER is $USER
+      return "1"
+    fi
+    CTR=`expr $CTR + 1`
+    shift 1
+  done
+  return "0"
+}
+#--------- examine - Break down parameter list -----------------------
+#--------- isprod  ---------------------------------------------------
+isprod()
+{
+#
+# the purpose of this: If you have a different login name elsewhere
+# and have a way to identify it here (by the first 3 characters)
+# then you have a way to automatically correct the username
+# for that area.
+#
+#  user1 for area 1
+#  LAN=`echo $1|cut -c5-7`
+  LAN=`echo $1|tail -4cf` # tail -4cf gets the last 3 characters on a line.  
+			  # it gets "cap" from www3cap or abc123xyzcap
+  case "$LAN" in
+    cap|cic|jax) if [ "$2" != "pre" ]; then # if "pre" predetermined, don't change user.
+		   USER=$USER1
+                 fi
+		 COMMENT="PRODUCTION"
+ 		 TEXTCOLOR=white
+		 BACKGROUND=black
+		 return 1;;  # return a 1 if the lan is in production
+   tst) COMMENT="Y2K AREA"
+	return 0;;
+   dev|dmz) COMMENT="Development"
+        return 0;;
+  esac
+#
+#  user 2 for area 2
+#
+  LAN=`echo $1|cut -c1-3`
+  case "$LAN" in 
+    cap|cic|jax|whe|pip|log|clt) 
+		 if [ "$2" != "pre" ]; then # if "pre" predetermined, don't change user.
+		   USER=$USER2
+	 	 fi
+ 		 COMMENT="PRODUCTION"
+ 		 TEXTCOLOR=black
+		 BACKGROUND=white
+		 return 1;; # return a 1 if the lan is in production
+  esac
+  return 0
+}
+#--------- isprod  ---------------------------------------------------
+#--------- help ------------------------------------------------------
+help()
+{
+  clear
+  echo
+  echo
+  echo "Usage: "
+  echo "	xt username@hostname"
+  echo "	xt -l username hostname"
+  echo
+  echo
+  exit
+}
+#--------- help ------------------------------------------------------
+#--------- configure -------------------------------------------------
+configure()
+{
+  #
+  # examine variables to determine if user has a visitor
+  #
+  examine $1 $2 $3 $4 $5 $6 $7
+  RV="$?"
+  if [ "$RV" = "1" ]; then
+    #
+    #   login name is predetermined by the commandline arguments
+    # echo login name is predetermined by the commandline arguments
+    # echo Login name is $USER
+    #
+    #   examine to determine if in production; modify username if necessary.
+    isprod $GOTO pre 
+    PROD="$?" 
+  else
+    #   examine to determine if in production; modify username if necessary.
+    GOTO=$1
+    isprod $GOTO normal
+    PROD="$?" 
+  fi
+  EXEC="ssh -v -l $USER $GOTO"
+  TTL2="$1 $2 $3 $4 $5"
+  TTL1="ssh -v $USER @ $GOTO       $COMMENT"
+}
+#--------- configure -------------------------------------------------
+#--------- main ------------------------------------------------------
+case $1 in
+	?|\/\?|help|\/help) help;;
+esac
+if [ ! "$1" = "" ]; then
+  #configure $1 $2 $3 $4 $5 $6
+  GOTO=$1
+  EXEC="ssh -l $USER $GOTO"
+  TTL2="$1 $2 $3 $4 $5"
+  TTL1="$GOTO       $COMMENT"
+  rxvt -T "$TTL1" -n "$TTL2" -ls -fg $TEXTCOLOR -bg $BACKGROUND -fn $FONT -sb -sl 5000 -e $EXEC &
+else
+  #
+  # echo nothing to examine; start a new xterm window.
+  #
+  TTL1="$COMMENT  -  $ME"
+  TTL2="$ME"
+  rxvt -T "$TTL1" -n "$TTL2" -vb  -ls -fg $TEXTCOLOR -bg $BACKGROUND -fn $FONT -sb -sl 5000 &
+fi
+#--------- main ------------------------------------------------------
+

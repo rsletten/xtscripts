@@ -1,0 +1,133 @@
+#!/bin/ksh
+MINE="127.0.0.1"  # Your ip addy here
+export MINE
+#DISPLAY=$MINE:0.0;export DISPLAY
+
+MULTI_DISPLAY=yes;
+export MULTI_DISPLAY
+# ------------------ execute -------------------------- 
+execute()
+{
+ /bin/xt $1 $2 $3 $4
+}
+# ------------------ execute -------------------------- 
+# ------------------ display -------------------------- 
+display()
+{
+if [ "$MULTI_DISPLAY" = "yes" ]; then
+  if [ "$2" = "all" ]; then
+    DISPLAY=$MINE:0.$1;export DISPLAY
+  fi
+#else
+#  DISPLAY=$MINE:0.0;export DISPLAY
+fi
+}
+# ------------------ display -------------------------- 
+# ------------------ www ------------------------------ 
+www()
+{
+if [ "$2" = "www" -o "$2" = "all" ]; then
+  display 0 $2
+  execute www1$1 $3 $4 $5 $6
+  execute www2$1 $3 $4 $5 $6
+  execute www3$1 $3 $4 $5 $6
+  execute www4$1 $3 $4 $5 $6
+  execute www5$1 $3 $4 $5 $6
+  execute www6$1 $3 $4 $5 $6
+  execute www7$1 $3 $4 $5 $6
+  execute www8$1 $3 $4 $5 $6
+fi
+if [ \( "$1" = "cic" \) ]; then
+  execute www9$1 $3 $4 $5 $6
+  execute www10$1 $3 $4 $5 $6
+  execute www11$1 $3 $4 $5 $6
+  execute www12$1 $3 $4 $5 $6
+  execute www13$1 $3 $4 $5 $6
+  execute www14$1 $3 $4 $5 $6
+fi
+if [ \( "$1" = "clt" \) ]; then
+  execute www9$1 $3 $4 $5 $6
+  execute www10$1 $3 $4 $5 $6
+  execute www11$1 $3 $4 $5 $6
+  execute www12$1 $3 $4 $5 $6
+  execute www13$1 $3 $4 $5 $6
+  execute www14$1 $3 $4 $5 $6
+  execute www15$1 $3 $4 $5 $6
+  execute www16$1 $3 $4 $5 $6
+fi
+if [ \( "$1" = "cnc" \) ]; then
+  execute www9$1 $3 $4 $5 $6
+  execute www10$1 $3 $4 $5 $6
+  execute www11$1 $3 $4 $5 $6
+  execute www12$1 $3 $4 $5 $6
+  execute www13$1 $3 $4 $5 $6
+  execute www14$1 $3 $4 $5 $6
+  execute www15$1 $3 $4 $5 $6
+  execute www16$1 $3 $4 $5 $6
+fi
+}
+# ------------------ www ------------------------------ 
+# ------------------ app ------------------------------ 
+app()
+{
+if [ "$2" = "app" -o "$2" = "all" ]; then
+  display 1 $2
+  execute app1$1 $3 $4 $5 $6
+  execute app2$1 $3 $4 $5 $6
+  execute app3$1 $3 $4 $5 $6
+  execute app4$1 $3 $4 $5 $6
+  if [ \( "$1" = "cic" \) ]; then
+    execute app41$1 $3 $4 $5 $6
+  fi
+fi
+}
+# ------------------ app ------------------------------ 
+# ------------------ dfs ------------------------------ 
+dfs()
+{
+if [ "$2" = "dfs" -o "$2" = "all" ]; then
+  display 1 $2
+  execute dfs1$1 $3 $4 $5 $6
+  execute dfs2$1 $3 $4 $5 $6
+fi
+}
+# ------------------ dfs ------------------------------ 
+# ------------------ tnn ------------------------------ 
+tnn()
+{
+  www $1 $2 $3 $4 $5 $6
+  app $1 $2 $3 $4 $5 $6
+  dfs $1 $2 $3 $4 $5 $6
+}
+# ------------------ tnn ------------------------------ 
+# ------------------ help ----------------------------- 
+help()
+{
+  echo
+  echo "Usage: xtl [cic,jax,clt,cnc] [www,app,dfs,all]"
+  echo "Example: xtl cic app"
+  echo
+  exit
+}
+# ------------------ help ----------------------------- 
+# ------------------ main ----------------------------- 
+DOLLAR1=bad
+DOLLAR2=bad
+
+case "$1" in
+  cap|cic|jax|clt|olb|cnc) DOLLAR1=ok;;
+esac
+ 
+case "$2" in
+  www|app|dfs|all) DOLLAR2=ok;;
+esac
+ 
+echo "xtl $1 $2 $3 $4 $5 $6"
+ 
+if [ "$DOLLAR1" = "ok" -a "$DOLLAR2" = "ok" ]; then
+    xhost $MINE
+    tnn $1 $2 $3 $4 $5 $6
+else
+  help
+fi
+# ------------------ main ----------------------------- 

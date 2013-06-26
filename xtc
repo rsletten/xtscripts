@@ -1,0 +1,101 @@
+#!/bin/bash
+
+function remote_wide {
+#	print ${TEXTCOLOR}
+	eval "${wCMD} -e ssh -q -l ${USER} ${TTL2} &"
+	exit 99
+}
+
+function local_wide {
+#	print ${TEXTCOLOR}
+	TTL2="${ME}"
+	eval "${wCMD} &"
+	exit 99
+}
+
+function usage {
+	print -u2 "\n "
+	print -u2 "Usage: "
+	print -u2 "      Wide Screen [120x40]"
+	print -u2 "      xt -w username@hostname"
+	print -u2 "      xt -w hostname"
+	print -u2 " "	
+	print -u2 "      Rug tunnel"
+	print -u2 "      xt -r hostname"
+	print -u2 " "
+	print -u2 "      iLo console"
+	print -u2 "      xt -i hostname"
+	exit 99
+}
+
+#------------------------------------------------------------------------------
+
+PATH=$PATH:/usr/local/bin:/home/a231677
+RGB_FILE='/home/a231677/bin/rgb.new'
+typeset -i LINES
+typeset -i LINE
+typeset -i sLINE
+USER='a231677'
+COMMENT='Rob Sletten'
+ME='hostname'
+FONT='fixed'
+BACKGROUND='black'
+
+LINES=`awk 'END { print NR }' ${RGB_FILE}`
+
+LINE=$(( (RANDOM % (LINES ))+1 ))
+
+sLINE=$(( (RANDOM % (LINES ))+1 ))
+
+TEXTCOLOR=`awk 'NR==LINE {print substr($0,index($0,$4))}' LINE=${LINE} ${RGB_FILE}`
+
+sTEXTCOLOR=`awk 'NR==sLINE {print substr($0,index($0,$4))}' sLINE=${sLINE} ${RGB_FILE}`
+
+CMD3='xterm -T "${TTL2} - ${TEXTCOLOR}" -n ${TTL2} -ls -fn ${FONT} -sb -sl 5000 +tb'
+
+CMD1='xterm -T "${TTL1} - ${TEXTCOLOR}" -n ${TTL2} -ls -fn ${FONT} -sb -sl 5000 +tb'
+
+CMD2='-fg ${TEXTCOLOR} -bg ${BACKGROUND} -ms ${sTEXTCOLOR}'
+
+case $1 in
+	?|\/\?|help|\/help) usage;;
+esac
+
+while getopts ":irw:" OPT; do
+        case ${OPT} in
+             	w) CHECK_AT=`echo "$2" | grep "@" |wc -l`
+				TTL1=${2}
+				WIDE='-geometry 120x40'
+				wCMD="${CMD1} ${CMD2} ${WIDE}"
+				if [ $CHECK_AT -eq 1 ]; then
+					USER=`echo $2|cut -f1 -d"@"`
+					TTL2=`echo $2|cut -f2 -d"@"`
+					remote_wide
+				elif [ ! "$2" = "" ]; then
+					USER='a231677'
+					TTL2=${2}
+					remote_wide
+				else
+					local_wide
+				fi;;
+		r) CHECK_AT=`echo "$2" | grep "@" | wc -l`
+				SERVER=${2}
+				eval "/home/a231677/bin/rugtun ${SERVER}"
+				exit;;
+	 	i) CHECK_AT=`echo "$2" | grep "@" | wc -l`
+				SERVER=${2}
+				eval "/home/a231677/bin/ilo ${SERVER}"
+				exit;;
+        esac
+done
+shift $((${OPTIND} - 1))
+	
+if [[ ${#} -eq 0 ]]; then
+#	print ${TEXTCOLOR}
+	TTL2="${ME}"
+	eval "${CMD1} ${CMD2} &"
+else
+#	print ${TEXTCOLOR}
+	TTL2="${1}"
+	eval "${CMD3} ${CMD2} -e ssh -X -q -l ${USER} ${TTL2} &"
+fi
